@@ -41,6 +41,21 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+
+    const message = error instanceof Error ? error.message : String(error);
+    const isChunkLoadError = /failed to fetch dynamically imported module|error loading dynamically imported module|loading chunk [\w-]+ failed/i.test(message);
+    if (!isChunkLoadError) return;
+
+    const failedUrl = message.match(/https?:\/\/\S+/)?.[0] ?? window.location.pathname;
+    const reloadKey = `odontoart:chunk-reload:${failedUrl}`;
+    const lastReload = Number(sessionStorage.getItem(reloadKey) ?? 0);
+
+    // A stale tab can reference a chunk from a previous deployment. Reload once
+    // so it can fetch the current HTML and asset manifest without creating a loop.
+    if (Date.now() - lastReload > 60_000) {
+      sessionStorage.setItem(reloadKey, String(Date.now()));
+      window.location.reload();
+    }
   }, [error]);
 
   return (
