@@ -1,13 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { ArrowDownRight, ArrowUpRight, Minus, Pencil, Plus, Trash2, CalendarPlus, LogOut, FileSpreadsheet, Target } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Minus, Pencil, Plus, Trash2, CalendarPlus, LogOut, FileSpreadsheet, Target, Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { compute, loadAll, type Indicator } from "@/lib/data";
 import { formatValue, monthLabel, MONTH_NAMES, parseInput, toEditString, variation } from "@/lib/format";
-import logoAsset from "@/assets/logo-odontoart.png.asset.json";
 import { MultiSelect } from "@/components/MultiSelect";
 import { IndicatorDialog, type IndicatorDraft } from "@/components/IndicatorDialog";
 import { Button } from "@/components/ui/button";
@@ -47,7 +46,22 @@ function Dashboard() {
   const [dialog, setDialog] = useState<{ mode: "new" | "edit"; draft: IndicatorDraft; id?: string } | null>(null);
   const [toDelete, setToDelete] = useState<Indicator | null>(null);
   const [goalsFor, setGoalsFor] = useState<Indicator | null>(null);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const { data: goals = [] } = useQuery({ queryKey: ["goals"], queryFn: loadGoals, staleTime: Infinity });
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("odontoart-theme");
+    const nextTheme = savedTheme === "dark" ? "dark" : "light";
+    setTheme(nextTheme);
+    document.documentElement.classList.toggle("dark", nextTheme === "dark");
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    setTheme(nextTheme);
+    document.documentElement.classList.toggle("dark", nextTheme === "dark");
+    localStorage.setItem("odontoart-theme", nextTheme);
+  };
 
   const indicators = data?.indicators ?? [];
   const periods = data?.periods ?? [];
@@ -214,13 +228,17 @@ function Dashboard() {
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-[1600px] flex-wrap items-end justify-between gap-4 px-6 py-5">
           <div className="flex items-center gap-3">
-            <img src={logoAsset.url} alt="Odontoart Planos Odontológicos" className="h-9 w-auto shrink-0" />
+            <img src="/logoOdontoart.png" alt="Odontoart Planos Odontológicos" className="h-12 w-[120px] shrink-0 object-cover object-center" />
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">RID Geral</p>
               <h1 className="text-2xl font-semibold tracking-tight">Indicadores de Gestão · Odontoart &amp; New Odonto</h1>
             </div>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={toggleTheme} aria-label={`Ativar tema ${theme === "light" ? "escuro" : "claro"}`} title={`Ativar tema ${theme === "light" ? "escuro" : "claro"}`}>
+              {theme === "light" ? <Moon className="mr-1 h-4 w-4" /> : <Sun className="mr-1 h-4 w-4" />}
+              {theme === "light" ? "Tema escuro" : "Tema claro"}
+            </Button>
             <Button variant="ghost" size="sm" onClick={async () => { await qc.cancelQueries(); qc.clear(); await supabase.auth.signOut(); navigate({ to: "/auth", replace: true }); }}><LogOut className="mr-1 h-4 w-4" />Sair</Button>
             <input id="import-xlsx" type="file" accept=".xlsx,.xls" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) importFile.mutate(f); e.target.value = ""; }} />
             <input id="import-goals" type="file" accept=".xlsx,.xls" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) importGoals.mutate(f); e.target.value = ""; }} />
@@ -247,7 +265,7 @@ function Dashboard() {
       </header>
 
       <main className="mx-auto grid max-w-[1600px] gap-6 px-6 py-6">
-        <section className="grid gap-4 lg:h-[420px] lg:grid-cols-[320px_1fr]">
+        <section className="sticky top-0 z-30 grid gap-4 bg-background/95 py-2 backdrop-blur lg:h-[420px] lg:grid-cols-[320px_1fr]">
           <div className="overflow-auto rounded-lg border border-border bg-card p-5">
             {sel && kpi ? (
               <>
@@ -297,7 +315,7 @@ function Dashboard() {
                     <CartesianGrid stroke="var(--border)" vertical={false} />
                     <XAxis dataKey="month" tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
                     <YAxis width={90} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => formatValue(v, sel.unit, sel.unit === "percentual" ? 0 : sel.decimals)} />
-                    <Tooltip formatter={(v: number) => formatValue(v, sel.unit, sel.decimals)} />
+                    <Tooltip formatter={(v: number) => formatValue(v, sel.unit, sel.decimals)} contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", color: "var(--foreground)" }} labelStyle={{ color: "var(--foreground)" }} itemStyle={{ color: "var(--foreground)" }} />
                     <Line type="monotone" dataKey="value" name={sel.name} stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
                     <Line type="stepAfter" dataKey="goal" name="Meta" stroke="var(--muted-foreground)" strokeWidth={1.5} strokeDasharray="5 4" dot={false} connectNulls={false} />
                   </LineChart>

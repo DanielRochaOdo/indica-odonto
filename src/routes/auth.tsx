@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import logoAsset from "@/assets/logo-odontoart.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -39,7 +38,7 @@ function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-lg border border-border bg-card p-8 shadow-sm">
         <div className="flex flex-col items-center gap-2 pb-2">
-          <img src={logoAsset.url} alt="Odontoart Planos Odontológicos" className="h-12 w-auto" />
+          <img src="/logoOdontoart.png" alt="Odontoart Planos Odontológicos" className="h-12 w-[120px] object-cover object-center" />
           <h1 className="text-lg font-semibold">Painel de Indicadores</h1>
         </div>
         <label className="block space-y-1 text-sm">
